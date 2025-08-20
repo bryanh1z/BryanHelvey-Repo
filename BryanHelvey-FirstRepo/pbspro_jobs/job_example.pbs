@@ -1,0 +1,17 @@
+#!/bin/bash
+#PBS -N test
+#PBS -l select=1:ncpus=4:mem=8gb
+#PBS -l walltime=01:00:00
+#PBS -j oe
+
+cd $PBS_O_WORKDIR
+
+echo "Running on host $(hostname)"
+echo "Starting job at $(date)"
+
+# Load env for work
+module load intel/2022
+module load mpi
+mpirun ./my_mpi_test_suite
+
+echo "Finished job at $(date)"

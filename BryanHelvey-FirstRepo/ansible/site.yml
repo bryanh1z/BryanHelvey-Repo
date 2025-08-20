@@ -1,0 +1,13 @@
+---
+- name:  HPC automation playbook
+  hosts: hpc_nodes
+  become: yes
+  tasks:
+    - name: Ensure required packages are installed
+      package:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - gcc
+        - gmake
+        - openmpi
