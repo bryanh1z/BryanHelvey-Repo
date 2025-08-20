@@ -1,0 +1,55 @@
+---
+- name: Force NTP time sync using ntpdate (autodetect NTP service)
+  hosts: all
+  become: yes
+
+  vars:
+    ntpdate_server: pool.ntp.org
+
+  tasks:
+
+    - name: Check for available NTP-related services
+      service_facts:
+
+    - name: Set NTP service name (ntp, chronyd, or systemd-timesyncd)
+      set_fact:
+        ntp_service_name: >-
+          {% if 'ntp' in ansible_facts.services %}
+            ntp
+          {% elif 'ntpd' in ansible_facts.services %}
+            ntpd
+          {% elif 'chronyd' in ansible_facts.services %}
+            chronyd
+          {% elif 'systemd-timesyncd' in ansible_facts.services %}
+            systemd-timesyncd
+          {% else %}
+            unknown
+          {% endif %}
+
+    - name: Fail if no known NTP service is found
+      fail:
+        msg: "No known NTP service found on this host."
+      when: ntp_service_name == 'unknown'
+
+    - name: Stop the detected NTP service
+      service:
+        name: "{{ ntp_service_name }}"
+        state: stopped
+
+    - name: Force time sync using ntpdate
+      command: ntpdate {{ ntpdate_server }}
+      register: ntpdate_output
+      changed_when: true
+
+    - name: Start the detected NTP service
+      service:
+        name: "{{ ntp_service_name }}"
+        state: started
+
+    - name: Show result of ntpdate sync
+      debug:
+        msg: |
+          Host: {{ inventory_hostname }}
+          NTP Service: {{ ntp_service_name }}
+          ntpdate output: {{ ntpdate_output.stdout }}
+
